@@ -35,7 +35,7 @@ public class FeedEntry {
 	@Lob
 	String content;
 	
-	@Column(length=56)
+	@Column(length=256)
 	String url;
 
 	/**
