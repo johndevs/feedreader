@@ -1,0 +1,7 @@
+**/build
+.gradle
+
+.idea
+**/*.iml
+
+frontend/src/main/webapp/VAADIN/widgetsets/

@@ -1,11 +1,11 @@
-apply plugin: 'war'
-apply plugin: 'jetty'
-
-def vaadinVersion = '7.0.0.beta1'
+plugins {
+    id 'com.devsoap.plugin.vaadin' version '1.2.1'
+}
 
 dependencies{
 	compile project(':service')
-	compile group:'com.vaadin', name:'vaadin-server', version:vaadinVersion
-	compile group:'com.vaadin', name:'vaadin-client-compiled', version:vaadinVersion
-	compile group:'com.vaadin', name:'vaadin-themes', version:vaadinVersion
+    compile "com.vaadin:vaadin-context-menu:2.0.0"
 }
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8

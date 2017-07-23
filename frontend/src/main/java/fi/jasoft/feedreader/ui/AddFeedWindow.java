@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 John Ahlroos
+ * Copyright 2017 John Ahlroos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,13 @@ import com.vaadin.ui.Notification;
 import com.vaadin.ui.TextField;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
-import com.vaadin.ui.Button.ClickEvent;
 
 import fi.jasoft.feedreader.data.Feed;
 
 /**
  * Window presented for the user when a new feed should be entered
  * 
- * @author John Ahlroos / http://www.jasoft.fi
+ * @author John Ahlroos / https://devsoap.com
  */
 public class AddFeedWindow extends Window {
 	
@@ -40,8 +39,8 @@ public class AddFeedWindow extends Window {
 	 */
 	public AddFeedWindow(){
 		setModal(true);
-		setWidth("300px");
-		setHeight("100px");
+		setWidth(300, Unit.PIXELS);
+		setHeight(200, Unit.PIXELS);
 		setResizable(false);
 		setDraggable(false);
 		setCaption("Add RSS/Atom Feed");
@@ -52,31 +51,26 @@ public class AddFeedWindow extends Window {
 		windowContent.setSizeFull();
 		setContent(windowContent);
 		
-		url = new TextField("Feed url");
+		url = new TextField();
+		url.setPlaceholder("http://<feed url>");
 		url.setWidth("100%");
 		windowContent.addComponent(url);
 		windowContent.setComponentAlignment(url, Alignment.MIDDLE_CENTER);
 		
 		HorizontalLayout buttons = new HorizontalLayout();
 		
-		buttons.addComponent(new Button("Add", new Button.ClickListener() {
-			@Override
-			public void buttonClick(ClickEvent event) {
-				if(validateUrl(url.getValue())){
-					close();
-				} else{
-					Notification.show("URL not valid");
-				}
-			}
-		}));
+		buttons.addComponent(new Button("Add", (Button.ClickListener) event -> {
+            if(validateUrl(url.getValue())){
+                close();
+            } else{
+                Notification.show("URL not valid");
+            }
+        }));
 		
-		buttons.addComponent(new Button("Cancel", new Button.ClickListener() {
-			@Override
-			public void buttonClick(ClickEvent event) {
-				url.setValue(null);
-				close();
-			}
-		}));
+		buttons.addComponent(new Button("Cancel", (Button.ClickListener) event -> {
+            url.setValue("");
+            close();
+        }));
 		
 		windowContent.addComponent(buttons);		
 		windowContent.setComponentAlignment(buttons, Alignment.BOTTOM_RIGHT);

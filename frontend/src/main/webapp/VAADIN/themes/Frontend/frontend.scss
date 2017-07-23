@@ -1,0 +1,7 @@
+@import "../valo/valo.scss";
+
+@mixin frontend {
+	@include valo;
+
+	/* Add your theme selectors here */
+}

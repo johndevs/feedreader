@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 John Ahlroos
+ * Copyright 2017 John Ahlroos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,78 +15,69 @@
  */
 package fi.jasoft.feedreader.ui;
 
-import com.vaadin.data.Property.ValueChangeEvent;
-import com.vaadin.data.util.BeanItemContainer;
-import com.vaadin.server.WrappedRequest;
-import com.vaadin.shared.ui.label.ContentMode;
+import com.vaadin.annotations.Theme;
+import com.vaadin.annotations.Title;
+import com.vaadin.contextmenu.ContextMenu;
+import com.vaadin.contextmenu.GridContextMenu;
+import com.vaadin.data.provider.DataProvider;
+import com.vaadin.data.provider.Query;
+import com.vaadin.server.VaadinRequest;
+import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.ui.Button;
-import com.vaadin.ui.CssLayout;
-import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Grid;
 import com.vaadin.ui.HorizontalSplitPanel;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Panel;
-import com.vaadin.ui.Table;
-import com.vaadin.ui.VerticalSplitPanel;
-import com.vaadin.ui.Button.ClickEvent;
-import com.vaadin.ui.Table.ColumnHeaderMode;
-import com.vaadin.ui.Window.CloseEvent;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.VerticalSplitPanel;
 import com.vaadin.ui.Window;
-import com.vaadin.ui.themes.Reindeer;
-import com.vaadin.data.Property;
-import com.vaadin.event.Action;
-
+import com.vaadin.ui.themes.ValoTheme;
 import fi.jasoft.feedreader.data.Feed;
 import fi.jasoft.feedreader.data.FeedEntry;
 import fi.jasoft.feedreader.service.FeedService;
 import fi.jasoft.feedreader.service.FeedServiceImpl;
 
+import java.util.List;
+import java.util.Optional;
+
+
 /**
  * User interface for the application.
  * 
- * @author John Ahlroos / http://www.jasoft.fi
+ * @author John Ahlroos / https://devsoap.com
  */
-public class ReaderUI extends UI implements Action.Handler{
+@Theme("Frontend")
+@Title("RSS Feed Reader")
+public class ReaderUI extends UI {
 
 	/*
 	 * Services
 	 */
 	private final FeedService feedService = new FeedServiceImpl();
-	
+
 	/*
 	 * Data providers
 	 */
-	private final BeanItemContainer<FeedEntry> entries = new BeanItemContainer<FeedEntry>(FeedEntry.class);
-	private final BeanItemContainer<Feed> feeds = new BeanItemContainer<Feed>(Feed.class);
-	{
-		feeds.addAll(feedService.getFeeds());
-	}
-	
+	private final DataProvider<Feed, Void> feeds = DataProvider.fromCallbacks(
+		fetch -> feedService.getFeeds().stream(),
+		count -> feedService.getFeeds().size()
+	);
+
 	// UI components
-	protected Panel entryPanel = new Panel();
-	protected Table feedTable;
-	protected Table entryTable;
-	
-	// Feed actions
-	private Action ADD_FEED_ACTION = new Action("Add RSS/Atom feed");
-	private Action REMOVE_FEED_ACTION = new Action("Remove RSS/Atom feed");
-	private Action SYNCRONIZE_ACTION = new Action("Syncronize feed");
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.vaadin.ui.UI#init(com.vaadin.server.WrappedRequest)
-	 */
+	private Panel entryPanel = new Panel();
+	private Grid<Feed> feedTable;
+	private Grid<FeedEntry> entryTable;
+
 	@Override
-	protected void init(WrappedRequest request) {
-		
+	protected void init(VaadinRequest request) {
+
 		// Create data tables
 		feedTable = createFeedsTable();
 		entryTable = createEntriesTable();
 		
 		// Create the main horizontal split panel
 		HorizontalSplitPanel content = new HorizontalSplitPanel();
-		content.setStyleName(Reindeer.SPLITPANEL_SMALL);
 		content.setSizeFull();
 		setContent(content);
 	
@@ -95,12 +86,7 @@ public class ReaderUI extends UI implements Action.Handler{
 		vl.setSizeFull();
 		vl.addComponent(feedTable);
 		
-		Button addFeedBtn = new Button("Add RSS/Atom feed", new Button.ClickListener() {		
-			@Override
-			public void buttonClick(ClickEvent event) {
-				addFeed();
-			}
-		});
+		Button addFeedBtn = new Button("Add RSS/Atom feed", (Button.ClickListener) event -> addFeed());
 		addFeedBtn.setWidth("100%");
 		vl.addComponent(addFeedBtn);
 		vl.setExpandRatio(feedTable, 1);
@@ -110,7 +96,6 @@ public class ReaderUI extends UI implements Action.Handler{
 
 		// Create and set the content of the right part of the main split panel
 		VerticalSplitPanel rightPane = new VerticalSplitPanel();
-		rightPane.setStyleName(Reindeer.SPLITPANEL_SMALL);
 		rightPane.setSizeFull();
 		
 		rightPane.addComponent(entryTable);
@@ -120,62 +105,55 @@ public class ReaderUI extends UI implements Action.Handler{
 		
 		content.addComponent(rightPane);
 		rightPane.setSplitPosition(30);
-		
-		if(feeds.size() > 0){
-			feedTable.setValue(feeds.getItemIds().iterator().next());
-		}
+
+        feeds.fetch(new Query<>())
+                .findFirst()
+                .ifPresent(feed -> feedTable.select(feed));
 	}
+
+
 	
 	/**
 	 * Creates the feed table on the left where added feeds are displayed
 	 */
-	private Table createFeedsTable(){
-		Table table = new Table();
+	private Grid<Feed> createFeedsTable(){
+		Grid<Feed> table = new Grid<>(Feed.class);
+		table.setDataProvider(feeds);
 		table.setSizeFull();
-		table.setNullSelectionAllowed(false);
-		table.setContainerDataSource(feeds);
-		table.setSelectable(true);
-		table.setImmediate(true);
-		table.addValueChangeListener(new Property.ValueChangeListener() {
-			@Override
-			public void valueChange(ValueChangeEvent event) {
-				entries.removeAllItems();
-				Feed feed = (Feed) event.getProperty().getValue();
-				if(feed != null){
-					entries.addAll(feed.getEntries());
-					if(entries.size() > 0){
-						entryTable.setValue(entries.getItemIds().iterator().next());
-					}
-				}
-			}
+		table.setSelectionMode(Grid.SelectionMode.SINGLE);
+        table.setColumns("url");
+        table.removeHeaderRow(0);
+
+		table.addSelectionListener((event) -> {
+            Optional<Feed> feed = event.getFirstSelectedItem();
+            if(feed.isPresent()) {
+                List<FeedEntry> entries = feed.get().getEntries();
+                entryTable.setItems(entries.toArray(new FeedEntry[entries.size()]));
+            }
+        });
+
+		GridContextMenu<Feed> contextMenu = new GridContextMenu<>(table);
+		contextMenu.addGridBodyContextMenuListener((event) -> {
+			ContextMenu menu = event.getContextMenu();
+			menu.removeItems();
+			menu.addItem("Add RSS/Atom feed", (item) -> addFeed());
+			menu.addItem("Remove RSS/Atom feed", (item) -> removeFeed((Feed) event.getItem()));
+			menu.addItem("Syncronize feed", (feed) -> syncronizeFeed((Feed) event.getItem()));
 		});
-		table.setVisibleColumns(new Object[]{"url"});
-		table.setColumnHeaderMode(ColumnHeaderMode.HIDDEN);
-		table.addActionHandler(this);
-		
+
 		return table;
 	}
-	
+
 	/**
 	 * Creates the table on the top where the selected feeds entries are displayed.
 	 */
-	private Table createEntriesTable(){
-		Table table = new Table();
+	private Grid<FeedEntry> createEntriesTable(){
+		Grid<FeedEntry> table = new Grid<>(FeedEntry.class);
 		table.setSizeFull();
-		table.setNullSelectionAllowed(false);
-		table.setSelectable(true);
-		table.setContainerDataSource(entries);
-		table.setImmediate(true);
-		table.addValueChangeListener(new Property.ValueChangeListener() {
-			@Override
-			public void valueChange(ValueChangeEvent event) {
-				FeedEntry entry = (FeedEntry) event.getProperty().getValue();
-				setContent(entry);
-			}
-		});
-		table.setVisibleColumns(new Object[]{"title"});
-		table.setColumnHeaderMode(ColumnHeaderMode.HIDDEN);
-		
+		table.setSelectionMode(Grid.SelectionMode.SINGLE);
+		table.addItemClickListener(event -> setContent(event.getItem()));
+		table.setColumns("title");
+		table.removeHeaderRow(0);
 		return table;
 	}
 	
@@ -190,7 +168,7 @@ public class ReaderUI extends UI implements Action.Handler{
 		content.setMargin(true);
 		if(entry != null){
 			Label title = new Label(entry.getTitle());
-			title.setStyleName(Reindeer.LABEL_H1);
+			title.setStyleName(ValoTheme.LABEL_H1);
 			content.addComponent(title);
 			Label entryContent = new Label(entry.getContent(), ContentMode.HTML);
 			content.addComponent(entryContent);
@@ -204,72 +182,29 @@ public class ReaderUI extends UI implements Action.Handler{
 	 */
 	private void addFeed(){
 		final AddFeedWindow addFeedWindow = new AddFeedWindow();
-		addFeedWindow.addCloseListener(new Window.CloseListener() {
-			@Override
-			public void windowClose(com.vaadin.ui.Window.CloseEvent e) {
-				Feed feed = addFeedWindow.getFeed();
-				if(feed != null){
-					// Save new feed and syncronize with remote feed
-					feedService.add(feed);
-					feeds.addBean(feed);
-					syncronize(feed);
-				}
-			}
-		});
+		addFeedWindow.addCloseListener((Window.CloseListener) e -> {
+            Feed feed = addFeedWindow.getFeed();
+            if(feed != null){
+                feedService.add(feed);
+                feedService.syncronize(feed);
+                feeds.refreshAll();
+                entryTable.getDataProvider().refreshAll();
+            }
+        });
 		getUI().addWindow(addFeedWindow);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.vaadin.event.Action.Handler#getActions(java.lang.Object, java.lang.Object)
-	 */
-	@Override
-	public Action[] getActions(Object target, Object sender) {
-		if(target == null){
-			return new Action[]{ ADD_FEED_ACTION };
-		} else {
-			return new Action[]{ REMOVE_FEED_ACTION, SYNCRONIZE_ACTION };
-		}
+	private void removeFeed(Feed feed) {
+		feedService.remove(feed);
+		feeds.refreshAll();
+        feeds.fetch(new Query<>())
+                .findFirst()
+                .ifPresent(f -> feedTable.select(f));
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.vaadin.event.Action.Handler#handleAction(com.vaadin.event.Action, java.lang.Object, java.lang.Object)
-	 */
-	@Override
-	public void handleAction(Action action, Object sender, Object target) {
-		if(action == ADD_FEED_ACTION){
-			addFeed();
-			
-		} else if(action == REMOVE_FEED_ACTION){
-			feedService.remove((Feed)target);
-			feedTable.removeItem((Feed)target);
-			if(feedTable.getValue() == null && feeds.size() > 0){
-				feedTable.setValue(feeds.getItemIds().iterator().next());
-			}
-			
-		} else if(action == SYNCRONIZE_ACTION){
-			syncronize((Feed)target);
-		}
-	}
-	
-	/**
-	 * Syncronizes a feed with the online RSS/ATOM feed. Updated the tables if necessery.
-	 * 
-	 * @param feed
-	 * 		The feed to syncronize
-	 */
-	private void syncronize(Feed feed){
-		// Syncronize feed with remote ATOM/RSS feed
+	private void syncronizeFeed(Feed feed) {
 		feedService.syncronize(feed);
-		
-		if(feedTable.getValue() == feed){
-
-			// Remove old entries
-			entries.removeAllItems();
-			
-			// Add new entries
-			entries.addAll(feed.getEntries());
-		}
+		feeds.refreshItem(feed);
+		entryTable.getDataProvider().refreshAll();
 	}
 }

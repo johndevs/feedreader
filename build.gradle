@@ -1,20 +1,18 @@
 allprojects{
-	group = 'fi.jasoft.feedreader'
-	version = '0.0.1'
+	group = 'com.devsoap.feedreader'
+	version = '0.0.2'
+
+    repositories {
+        mavenCentral()
+        maven {
+            name = 'EclipseLink'
+            url = 'http://download.eclipse.org/rt/eclipselink/maven.repo'
+        }
+    }
 }
 
-subprojects{
-	apply plugin: 'java'
-	apply plugin: 'eclipse'
-	sourceCompatibility = 1.6
-	targetCompatibility = 1.6
-	
-	repositories{
-		mavenCentral()
-		mavenRepo name:'EclipseLink', url:'http://download.eclipse.org/rt/eclipselink/maven.repo'
-	}
+task wrapper(type:Wrapper) {
+    gradleVersion='4.0'
 }
-
-task wrapper(type:Wrapper){ gradleVersion='1.2' }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 John Ahlroos
+ * Copyright 2017 John Ahlroos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,11 +43,22 @@ import fi.jasoft.feedreader.data.FeedEntry;
  * Implementation of {@link FeedService} which stores the feeds using 
  * EclipseLink into a HSQLDB database.
  * 
- * @author John Ahlroos / http://www.jasoft.fi
+ * @author John Ahlroos / https://devsoap.com
  */
 public class FeedServiceImpl implements FeedService{
 	
 	private static final String PERSISTANCE_UNIT = "feedReader";
+
+	public FeedServiceImpl() {
+
+		// Populate with one feed in the beginning for demo purposes
+		if(getFeeds().isEmpty()) {
+			Feed feed = new Feed();
+			feed.setUrl("http://feeds.feedburner.com/LinuxJournal-BreakingNews");
+			add(feed);
+			syncronize(feed);
+		}
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -176,9 +187,7 @@ public class FeedServiceImpl implements FeedService{
 	        }
 	        save(feed, em);
 	        
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-		} catch (IllegalArgumentException e) {
+		} catch (MalformedURLException | IllegalArgumentException e) {
 			e.printStackTrace();
 		} catch (FeedException e) {
 			e.printStackTrace();

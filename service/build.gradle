@@ -1,4 +1,11 @@
+plugins {
+	id 'java'
+}
+
 dependencies{
 	compile project(':data')
 	compile group:'rome', name:'rome', version:'0.9'
 }
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8

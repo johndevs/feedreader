@@ -1,5 +1,5 @@
 /*
- * Copyright 2012 John Ahlroos
+ * Copyright 2017 John Ahlroos
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import fi.jasoft.feedreader.data.FeedEntry;
 /**
  * A service for managing feeds
  * 
- * @author John Ahlroos / http://www.jasoft.fi
+ * @author John Ahlroos / https://devsoap.com
  */
 public interface FeedService {
 	
